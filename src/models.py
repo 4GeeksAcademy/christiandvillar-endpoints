@@ -141,15 +141,6 @@ class Favorite(Base):
     planet = relationship("Planet")
     starship = relationship("Starship")
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "person_id": self.person_id,
-            "planet_id": self.planet_id,
-            "starship_id": self.starship_id
-        }
-
 # Database setup
 engine = create_engine('sqlite:///starwars_blog.db')
 Base.metadata.create_all(engine)

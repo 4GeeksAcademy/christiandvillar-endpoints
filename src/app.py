@@ -5,7 +5,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planet, Person
+from models import db, User, Planet, Person, Favorite  # Asegúrate de importar Favorite
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -32,7 +32,7 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-
+# Rutas para Person
 @app.route('/person', methods=['POST'])
 def create_person():
     data = request.get_json()
@@ -80,7 +80,7 @@ def delete_person(person_id):
     db.session.commit()
     return jsonify({"message": "Person deleted successfully"}), 200
 
-
+# Rutas para Planet
 @app.route('/planet', methods=['POST'])
 def create_planet():
     data = request.get_json()
@@ -121,6 +121,42 @@ def delete_planet(planet_id):
     db.session.delete(planet)
     db.session.commit()
     return jsonify({"message": "Planet deleted successfully"}), 200
+
+# Rutas para Favorites
+@app.route('/favorites', methods=['POST'])
+def add_favorite():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    person_id = data.get("person_id")
+    planet_id = data.get("planet_id")
+    starship_id = data.get("starship_id")
+    
+    if not user_id:
+        raise APIException("User ID is required", 400)
+
+    favorite = Favorite(user_id=user_id, person_id=person_id, planet_id=planet_id, starship_id=starship_id)
+    db.session.add(favorite)
+    db.session.commit()
+    return jsonify(favorite.serialize()), 201
+
+@app.route('/favorites/<int:favorite_id>', methods=['DELETE'])
+def delete_favorite(favorite_id):
+    favorite = Favorite.query.get(favorite_id)
+    if not favorite:
+        raise APIException("Favorite not found", 404)
+    
+    db.session.delete(favorite)
+    db.session.commit()
+    return jsonify({"message": "Favorite deleted successfully"}), 200
+
+@app.route('/users/<int:user_id>/favorites', methods=['GET'])
+def get_user_favorites(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException("User not found", 404)
+    
+    favorites = [favorite.serialize() for favorite in user.favorites]
+    return jsonify(favorites), 200
 
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
